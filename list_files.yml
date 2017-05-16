@@ -12,4 +12,5 @@ outputs:
   - name: updated-gambit
 
 run:
-  path: resource-gambitcardddb/list_files.sh
+  path: echo
+  args: [$HOSTNAME]
