@@ -12,4 +12,4 @@ outputs:
   - name: updated-gambit
 
 run:
-  path: pwd
+  path: resource-gambitcardddb/list_files.sh
