@@ -12,5 +12,5 @@ outputs:
   - name: updated-gambit
 
 run:
-  path: echo
-  args: [$HOSTNAME]
+  path: pwd
+  args: [-al]
