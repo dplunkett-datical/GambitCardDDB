@@ -1,4 +1,6 @@
 #!/bin/sh
+#!/bin/sh
+# rest of script
 
 set -e # fail fast
 set -x # print commands
