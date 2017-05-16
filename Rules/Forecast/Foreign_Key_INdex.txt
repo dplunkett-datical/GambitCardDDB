@@ -1,0 +1,108 @@
+/*
+@author Kevin Chappell
+@version 1.1
+@date October 28,2014
+@description Make sure all Foreign Key Constraint columns are indexed 
+*/
+package com.datical.rules.forecast
+
+// ******************************** Helper Functions ********************************
+import java.util.List;
+import java.util.Arrays;
+import java.util.ArrayList;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.collections.ListUtils;
+import com.datical.hammer.core.rules.Response;
+import com.datical.hammer.core.rules.Response.ResponseType;
+import com.datical.hammer.core.forecast.rules.RuleFunctions;
+
+// ************************************* Models *************************************
+// Database Models
+import com.datical.dbsim.model.DbModel;
+import com.datical.dbsim.model.Schema;
+import com.datical.dbsim.model.Table;
+import com.datical.dbsim.model.Index;
+import com.datical.dbsim.model.Column;
+
+// Change Models
+import org.liquibase.xml.ns.dbchangelog.AddForeignKeyConstraintType;
+
+// ************************************* Rules **************************************
+rule "AddForeignKeyConstraint (Oracle): Base table column(s) should have an index"
+	when
+		AddForeignKeyConstraintType($baseTableName: getBaseTableName(), 
+									$baseColumnNames: StringUtils.split(getBaseColumnNames(), ","),
+									$baseColumnNamesUC: StringUtils.split(getBaseColumnNames().toUpperCase(), ","))
+		$db_model : DbModel( )
+		$db_schemas : List( size() > 0 )
+							from collect (Schema()
+								from $db_model.getSchemas())
+		$db_tables : List( size() > 0 ) 
+							from accumulate (
+								Schema( $tmp_tables: getTables()) from $db_schemas,
+								init( List newList = new ArrayList(); ),
+								action( newList.addAll($tmp_tables); ),
+								result( newList )
+							)
+		$db_matched_table : Table(getName() == $baseTableName || getName().toUpperCase() == $baseTableName.toUpperCase()) from $db_tables
+		$db_index_column_names : List( true ) 
+							from accumulate (
+								Index( $tmp_columns: getColumns() ) from $db_matched_table.getIndices(),
+								init( List newList = new ArrayList(); ),
+								action( newList.addAll($tmp_columns); ),
+								result( newList )
+							)
+		$db_matched_index_column_names : List( size() < $baseColumnNames.size )
+							from collect(String($baseColumnNames contains this || $baseColumnNamesUC contains this.toUpperCase()) 
+								from $db_index_column_names)
+	then
+		List diff = null;
+		String errorMessage = null;
+		String plural = null;
+		
+		diff = ListUtils.subtract(Arrays.asList($baseColumnNames), $db_matched_index_column_names);
+		plural = (diff.size() > 1) ? "s" : "";
+		errorMessage = "Required indices missing on base table (" + $baseTableName + ") and column" + plural + " (" + StringUtils.join(diff, ",") + ").";
+		
+		insert(new Response(ResponseType.FAIL, errorMessage, drools.getRule().getName()));
+end
+
+
+rule "AddForeignKeyConstraint (Oracle): Referenced table column(s) should have an index"
+	when
+		AddForeignKeyConstraintType($referencedTableName: getReferencedTableName(), 
+									$referencedColumnNames: StringUtils.split(getReferencedColumnNames(), ","),
+									$referencedColumnNamesUC: StringUtils.split(getReferencedColumnNames().toUpperCase(), ","))
+		$db_model : DbModel( )
+		$db_schemas : List( size() > 0 )
+							from collect (Schema()
+								from $db_model.getSchemas())
+		$db_tables : List( size() > 0 ) 
+							from accumulate (
+								Schema( $tmp_tables: getTables()) from $db_schemas,
+								init( List newList = new ArrayList(); ),
+								action( newList.addAll($tmp_tables); ),
+								result( newList )
+							)
+		$db_matched_table : Table(getName() == $referencedTableName || getName().toUpperCase() == $referencedTableName.toUpperCase()) from $db_tables
+		$db_index_column_names : List( true ) 
+							from accumulate (
+								Index( $tmp_columns: getColumns() ) from $db_matched_table.getIndices(),
+								init( List newList = new ArrayList(); ),
+								action( newList.addAll($tmp_columns); ),
+								result( newList )
+							)
+		$db_matched_index_column_names : List( size() < $referencedColumnNames.size )
+							from collect(String($referencedColumnNames contains this || $referencedColumnNamesUC contains this.toUpperCase()) 
+								from $db_index_column_names)
+	then
+		List diff = null;
+		String errorMessage = null;
+		String plural = null;
+		
+		diff = ListUtils.subtract(Arrays.asList($referencedColumnNames), $db_matched_index_column_names);
+		plural = (diff.size() > 1) ? "s" : "";
+		errorMessage = "Required indices missing on referenced table (" + $referencedTableName + ") and column" + plural + " (" + StringUtils.join(diff, ",") + ").";
+		
+		insert(new Response(ResponseType.FAIL, errorMessage, drools.getRule().getName()));
+end

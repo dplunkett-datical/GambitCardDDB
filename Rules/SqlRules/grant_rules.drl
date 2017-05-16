@@ -1,0 +1,29 @@
+package com.datical.hammer.core.sqlrules
+
+//================================================================================
+// File: 	grants_rules.drl
+//
+// Phase: 	SQLRULES
+//       
+// Purpose: Ensure "grant"s are not in database code, anywhere
+//
+// Invoke:	hammer runRules or deployPackager
+//
+//================================================================================
+
+import com.datical.db.project.Project;
+import com.datical.hammer.core.rules.Response;
+import com.datical.hammer.core.rules.Response.ResponseType;
+import com.datical.hammer.core.rules.WithComments;
+import com.datical.hammer.core.rules.WithoutComments;
+
+rule "GRANT's are not allowed in SQL Scripts"
+	salience 1
+	when
+		wc : WithComments(getText().toLowerCase() contains "grant" )
+	then
+		String errorMessage =  
+			"FILE: " +
+			wc.getSqlFile().getName() + " on lines: " + wc.getLineNumbers("grant");
+		insert(new Response(ResponseType.FAIL, errorMessage, drools.getRule().getName()));
+	end

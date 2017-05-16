@@ -1,0 +1,325 @@
+package com.datical.hammer.core.sqlrules
+
+//================================================================================
+// File: 	column_rules.drl
+//
+// Phase: 	SQLRULES
+//       
+// Purpose: Ensure column adds do not set a DEFAULT VALUE
+//
+// Invoke:	hammer runRules or deployPackager
+//
+// Assumptions: 
+//	1. Expecting only one "ALTER TABLE" per file
+//
+// Standards Enforced:
+//
+//	2016-11-29: Column Adds must not set a DEFAULT value
+//	2016-11-29: Column Add names must be less than 30 characters
+//	2016-11-29: Column Add names cannot contain special characters
+//	2016-11-29: Column Drops not allowed
+//
+//================================================================================
+
+import com.datical.db.project.Project;
+import com.datical.hammer.core.rules.Response;
+import com.datical.hammer.core.rules.Response.ResponseType;
+import com.datical.hammer.core.rules.WithComments;
+import com.datical.hammer.core.rules.WithoutComments;
+import liquibase.util.StringClauses;
+import liquibase.util.StringClauses.ClauseIterator;
+import liquibase.util.SqlParser;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
+
+//------------------------------------------------------------
+  rule "Column Adds must not set a DEFAULT value"
+//------------------------------------------------------------
+	salience 1
+	when
+	    wc : WithComments(checkAddObjectNames(getText(), "table", "T_"))
+	then
+	    String errorMessage = "FILE: " + wc.getSqlFile().getName();
+	    insert(new Response(ResponseType.WARN, errorMessage, drools.getRule().getName()));
+	end
+	
+//------------------------------------------------------------
+  rule "Column names must be less that 30 characters."
+//------------------------------------------------------------
+	salience 1
+	when
+	    wc : WithComments((getAlterObjectName(getText(), "table")).length() > 30)
+	then
+	    String errorMessage = "FILE: " + wc.getSqlFile().getName();
+	    insert(new Response(ResponseType.WARN, errorMessage, drools.getRule().getName()));
+	end
+	
+//------------------------------------------------------------
+//  rule "Column Drops not allowed"
+//------------------------------------------------------------
+	//salience 1
+	//when
+	    //wc : WithComments(checkForColumnDrops(getText(), "table"))
+	//then
+	    //String errorMessage = "FILE: " + wc.getSqlFile().getName();
+	    //insert(new Response(ResponseType.FAIL, errorMessage, drools.getRule().getName()));
+	//end
+	
+//------------------------------------------------------------
+  rule "Column names should only use certain characters"
+//------------------------------------------------------------
+	salience 1
+	when
+	    wc : WithComments(checkForSpecialCharsInName(getText(), "table"))
+	then
+	    String errorMessage = "FILE: " + wc.getSqlFile().getName();
+	    insert(new Response(ResponseType.FAIL, errorMessage, drools.getRule().getName()));
+	end
+		
+//============================================================
+// checkAddObjectNames(sql, objectType, nameString)
+// 		Parses SQL looking for "ALTER $X ADD $Y" and validates that 
+//		DEFAULT is not being set
+//============================================================
+
+function boolean checkAddObjectNames(String sqlString, String sqlObjectType, String nameString) {
+	List<String>   tokens = new ArrayList<>();
+	StringClauses  parsed = SqlParser.parse(sqlString, true, false);
+	ClauseIterator ci     = parsed.getClauseIterator();
+	
+	boolean result 		  = true;
+	
+	//
+	// Tokenize the SQL
+	//
+	while (ci.hasNext()) {
+		String string = (String)ci.nextNonWhitespace();
+		if (string != null) {
+			tokens.add(string);
+		}
+	}
+
+	//
+	// Look for "ALTER $objectType ADD $objectName ..." and make sure DEFAULT is not being set
+	//
+	for (int i=0; i < tokens.size(); i++) {
+		String token = tokens.get(i); 
+		if (token == null) {
+			continue;
+		}
+
+		String thisToken   = token.toLowerCase();			
+		if (thisToken.equals("alter")) {
+			String objectToken = tokens.get(i+1).toLowerCase();
+			String nameToken   = tokens.get(i+2).toLowerCase();
+			String actionToken = tokens.get(i+3).toLowerCase();
+			
+			// Object type of interest?
+			if (objectToken.equals(sqlObjectType)) {
+				if (actionToken.equals("add")) {
+				
+					// Scan rest of statement for DEFAULT
+					for (int j=i+4; j < tokens.size(); j++) {
+						String tokenj = tokens.get(j); 
+						if (tokenj == null) {
+							continue;
+						}
+										
+						// Is a DEFAULT here?
+						if (tokenj.toLowerCase().equals("default")) {
+							return true; // Yes it is
+						} else {
+							continue;	 // No it's not
+						}
+					}
+				
+				} else {
+					result = false;		// Not an "ADD"
+				}
+			} else {
+				result = false;			// Not interested in this object type
+			}
+		} else {
+			result = false;
+		}
+	}
+		
+	return result; 		  			// Return false it ok, true it not
+}
+
+//============================================================
+// getAlterObjectName(sql, objectType)
+// 		Parses SQL looking for "CREATE $X $Y" and validates that 
+//		object names ($Y) start with nameString
+//============================================================
+
+function String getAlterObjectName(String sqlString, String sqlObjectType) {
+	List<String>   tokens = new ArrayList<>();
+	StringClauses  parsed = SqlParser.parse(sqlString, true, false);
+	ClauseIterator ci     = parsed.getClauseIterator();
+	
+	boolean result 		  = true;
+	
+	//
+	// Tokenize the SQL
+	//
+	while (ci.hasNext()) {
+		String string = (String)ci.nextNonWhitespace();
+		if (string != null) {
+			tokens.add(string);
+		}
+	}
+
+	//
+	// Look for "ALTER $objectType ADD return objectName
+	//
+	for (int i=0; i < tokens.size(); i++) {
+		String token = tokens.get(i); 
+		if (token == null) {
+			continue;
+		}
+
+		String thisToken   = token.toLowerCase();			
+		if (thisToken.equals("alter")) {
+			String objectToken = tokens.get(i+1).toLowerCase();
+			String nameToken   = tokens.get(i+2).toLowerCase();
+			String actionToken = tokens.get(i+3).toLowerCase();
+			
+			// Object type of interest?
+			if (objectToken.equals(sqlObjectType)) {
+				if (actionToken.equals("add")) {
+					String columnToken = tokens.get(i+4).toLowerCase();
+					return columnToken;	  
+				
+				} else {
+					return "";		// Not interested in this object type
+				}
+			} else {
+				return "";			// Not a "create"
+			}
+		}
+	}
+		
+	return ""; 		  			// Return false it ok, true it not
+}
+
+//============================================================
+// checkForColumnDrops(sql, objectType)
+// 		Parses SQL looking for "CREATE $X $Y" and validates that 
+//		object names ($Y) start with nameString
+//============================================================
+
+function boolean checkForColumnDrops(String sqlString, String sqlObjectType) {
+	List<String>   tokens = new ArrayList<>();
+	StringClauses  parsed = SqlParser.parse(sqlString, true, false);
+	ClauseIterator ci     = parsed.getClauseIterator();
+	
+	//
+	// Tokenize the SQL
+	//
+	while (ci.hasNext()) {
+		String string = (String)ci.nextNonWhitespace();
+		if (string != null) {
+			tokens.add(string);
+		}
+	}
+
+	//
+	// Look for "CREATE $objectType $objectName" return objectName
+	//
+	for (int i=0; i < tokens.size(); i++) {
+		String token = tokens.get(i); 
+		if (token == null) {
+			continue;
+		}
+
+		String thisToken   = token.toLowerCase();			
+		if (thisToken.equals("alter")) {
+			String objectToken = tokens.get(i+1).toLowerCase();
+			String nameToken   = tokens.get(i+2).toLowerCase();
+			String actionToken = tokens.get(i+3).toLowerCase();
+			
+			// Object type of interest?
+			if (objectToken.equals(sqlObjectType)) {
+				if (actionToken.equals("drop")) {
+					return true;		// Not interested in this object type
+				}
+			} else {
+				continue;			// Not a "alter"
+			}
+		}
+	}
+		
+	return false; 		  			// Return false it ok, true it not
+}
+
+//============================================================
+// checkForSpecialCharsInName(sql, objectType)
+// 		Parses SQL looking for "CREATE $X $Y" and validates that 
+//		object names ($Y) start with nameString
+//============================================================
+
+function boolean checkForSpecialCharsInName(String sqlString, String sqlObjectType) {
+	List<String>   tokens = new ArrayList<>();
+	StringClauses  parsed = SqlParser.parse(sqlString, true, false);
+	ClauseIterator ci     = parsed.getClauseIterator();
+	
+	boolean result 		  = true;
+	
+	//
+	// Tokenize the SQL
+	//
+	while (ci.hasNext()) {
+		String string = (String)ci.nextNonWhitespace();
+		if (string != null) {
+			tokens.add(string);
+		}
+	}
+	
+	//
+	// Look for "ALTER $objectType ADD return objectName
+	//
+	for (int i=0; i < tokens.size(); i++) {
+		String token = tokens.get(i); 
+		if (token == null) {
+			continue;
+		}
+
+		String thisToken   = token.toLowerCase();			
+		if (thisToken.equals("alter")) {
+			String objectToken = tokens.get(i+1).toLowerCase();
+			String nameToken   = tokens.get(i+2).toLowerCase();
+			String actionToken = tokens.get(i+3).toLowerCase();
+			
+			// Object type of interest?
+			if (objectToken.equals(sqlObjectType)) {
+				if (actionToken.equals("add")) {
+					String columnToken = tokens.get(i+4).toLowerCase();
+					// Does the name have special characters?
+					if (columnToken == null || columnToken.trim().isEmpty()) {
+				         System.out.println("Incorrect format of string");
+				         return true;
+				     }
+				     Pattern p = Pattern.compile("[^A-Za-z0-9_]");
+				     Matcher m = p.matcher(columnToken);
+				     boolean b = m.find();
+				     if (b == true) {
+				        return true;
+				     } else {
+				     	return false;
+				     }	  
+				
+				} else {
+					continue;		// Not interested in this object type
+				}
+			} else {
+				continue;			// Not a "create"
+			}
+		}
+	}
+		
+	return false; 		  			// Return false it ok, true it not
+}

@@ -1,0 +1,35 @@
+[ {
+  "author" : "Administrator",
+  "comment" : "DML with Rollback",
+  "labels" : "current_sprint",
+  "contexts" : "",
+  "files" : [ {
+    "filename" : "C:\\Users\\Administrator\\git\\gambitcardsql\\sql_code\\data_dml\\T_REWARDS-DML.sql",
+    "rollbackFile" : "C:\\Users\\Administrator\\git\\gambitcardsql\\sql_code\\data_dml\\T_REWARDS-DML-ROLLBACK.sql",
+    "type" : "sqlplus"
+  } ]
+}, {
+  "author" : "Administrator",
+  "comment" : "DDL",
+  "labels" : "current_sprint",
+  "contexts" : "",
+  "files" : [ {
+    "filename" : "C:\\Users\\Administrator\\git\\gambitcardsql\\sql_code\\ddl\\ADD_TABLES.sql",
+    "rollbackFile" : null,
+    "type" : "ddl"
+  }, {
+    "filename" : "C:\\Users\\Administrator\\git\\gambitcardsql\\sql_code\\ddl\\TABLE-ADD-NICKNAME-COLUMN-TO-CUSTOMER.sql",
+    "rollbackFile" : null,
+    "type" : "ddl"
+  } ]
+}, {
+  "author" : "Administrator",
+  "comment" : "Stored Procedure with Rollback",
+  "labels" : "current_sprint",
+  "contexts" : "",
+  "files" : [ {
+    "filename" : "C:\\Users\\Administrator\\git\\gambitcardsql\\sql_code\\procedure\\PROC-CUSTOMER-HAS-NUM-CARD.sql",
+    "rollbackFile" : "C:\\Users\\Administrator\\git\\gambitcardsql\\sql_code\\procedure\\PROC-CUSTOMER-HAS-NUM-CARD-ROLLBACK.sql",
+    "type" : "procedure"
+  } ]
+} ]

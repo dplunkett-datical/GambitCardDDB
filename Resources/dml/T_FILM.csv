@@ -1,0 +1,11 @@
+FILM_ID,TITLE,DIRECTOR,PRODUCTION_COMPANY,GENRE_ID,MIN_AGE,FILM_ID_EPISODES
+1,The Shawshank Redemption,Frank Darabont,Castle Rock Entertainment,1,15,1
+2,The Godfather,Francis Ford Coppola,Paramount Pictures,1,15,1
+3,The Godfather: Part II,Francis Ford Coppola,Paramount Pictures,1,15,2
+4,The Good the Bad and the Ugly,Sergio Leone,PEA,2,15,1
+5,Pulp Fiction,Quentin Tarantino,Miramax Films,1,18,1
+6,12 Angry Men,Sidney Lumet,Orion-Nova Productions,3,15,1
+7,Schindler's List,Steven Spielberg,Universal Pictures,4,15,1
+8,One Flew Over the Cuckoo's Nest,Milos Forman,Fantasy Films,3,15,1
+9,Kill Bill: Volume 1,Quentin Tarantino,Miramax,3,15,1
+10,Kill Bill: Volume 2,Quentin Tarantino,Miramax,3,15,2

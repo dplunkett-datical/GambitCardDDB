@@ -1,0 +1,73 @@
+/*
+@author Surya Aki
+@version 1.1
+@date September 20,2016
+@description Make sure view does not refer another view
+*/
+package com.datical.rules.forecast
+
+import java.util.List;
+import java.util.Arrays;
+
+//Datical Resources
+import com.datical.db.project.Project;
+import com.datical.hammer.core.rules.Response;
+import com.datical.hammer.core.rules.Response.ResponseType;
+import com.datical.hammer.dbsim.service.model.MessageImpl;
+import function com.datical.hammer.core.forecast.rules.RuleFunctions.log;
+
+//Change Log Resources
+import org.liquibase.xml.ns.dbchangelog.CreateViewType;
+
+//Model Resources
+import com.datical.dbsim.model.DbModel;
+import com.datical.dbsim.model.View;
+import com.datical.dbsim.model.Schema;
+
+rule "View should not reference another view"
+  when
+    $dbModel : DbModel()
+    $createView : CreateViewType(doesViewReferToAnotherView($dbModel,this))
+  then
+    String errorMessage = createWarnMessageForView($dbModel,$createView);
+    if (errorMessage != "") 
+      insert(new Response(ResponseType.WARN, errorMessage, drools.getRule().getName()));
+          
+  end
+
+function boolean doesViewReferToAnotherView(DbModel dbModel, CreateViewType createView) {
+  boolean viewRefersToAnotherView = false;
+  String viewSql =  createView.getValue();
+  String viewName = createView.getViewName();
+  String[] viewSqls = viewSql.split(" ");
+  List<String> viewSqlList = Arrays.asList(viewSqls);  
+
+  for (Schema schema : dbModel.getSchemas()) {
+    for (View view : schema.getViews()) {
+      if(viewSqlList.contains(view.getName())) {
+        viewRefersToAnotherView = true;
+        break;
+      }
+    }
+  }  
+  return viewRefersToAnotherView;
+}
+
+// This method is just for warn messaging purpose
+function String createWarnMessageForView(DbModel dbModel, CreateViewType createView) {
+  String errorMessage ="";
+  String viewSql =  createView.getValue();
+  String viewName = createView.getViewName();
+  String[] viewSqls = viewSql.split(" ");
+  List<String> viewSqlList = Arrays.asList(viewSqls);  
+
+  for (Schema schema : dbModel.getSchemas()) {
+    for (View view : schema.getViews()) {
+      if(viewSqlList.contains(view.getName())) {
+        errorMessage ="View "+viewName +" references another view "+view.getName(); 
+        break;
+      }
+    }
+  }  
+  return errorMessage;
+}

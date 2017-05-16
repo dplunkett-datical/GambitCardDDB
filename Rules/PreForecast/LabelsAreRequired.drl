@@ -1,0 +1,33 @@
+package com.datical.hammer.core.forecast
+
+//================================================================================
+// File: 	ChangeSet_LabelsMustBeSet.drl
+// Phase: 	PreForecast
+//       
+// Purpose: Ensures changeSets have labels
+//
+// 2015-09-01:	
+//
+//================================================================================
+
+dialect "mvel"
+
+// Objects Required for Rule
+import org.liquibase.xml.ns.dbchangelog.ChangeSetType;
+import com.datical.hammer.core.rules.Response;
+import com.datical.hammer.core.rules.Response.ResponseType;
+
+rule "Change Set Has No Deployment Label Set"
+	salience 999
+	when
+		$changeSet : ChangeSetType ($changeSet.labels matches null || $changeSet.labels matches "")
+	then
+		String errorMessage = "Change Set:" + $changeSet.getId() + "Author: " + $changeSet.getAuthor() + " does not have a deployment label set.";
+		Response response = new Response();
+        response.setChangeSetId($changeSet.getId());
+        response.setRuleName(drools.getRule().getName());
+        response.getMessages().add(errorMessage);
+        response.setReturnCode(ResponseType.FAIL);
+        insert(response);
+	end
+

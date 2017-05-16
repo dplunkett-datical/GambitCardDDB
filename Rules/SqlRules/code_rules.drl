@@ -1,0 +1,251 @@
+package com.datical.hammer.core.sqlrules
+
+//================================================================================
+// File: 	code_rules.drl
+//
+// Phase: 	SQLRULES
+//       
+// Purpose: Ensure naming standards are adhered to for database code "CREATE"
+//
+// Invoke:	hammer runRules or deployPackager
+//
+// Assumptions:
+//	1. Only expecting one "CREATE $OBJECT" or "CREATE OR REPLACE $OBJECT" per file
+//
+// Standards Enforced:
+//
+//   2016-11-24: Procedure names must start with 'SP_'
+//   2016-11-29: Procedure names be less than 30 characters
+//   2016-11-29: Function names must start with 'FN_'
+//   2016-11-29: Function names be less than 30 characters
+//   2016-11-29: Trigger names must start with 'TR_'
+//   2016-11-29: Trigger names be less than 30 characters
+//	 2016-12-01: Added ability to handle "create or replace"
+//
+//================================================================================
+
+import com.datical.db.project.Project;
+import com.datical.hammer.core.rules.Response;
+import com.datical.hammer.core.rules.Response.ResponseType;
+import com.datical.hammer.core.rules.WithComments;
+import com.datical.hammer.core.rules.WithoutComments;
+import liquibase.util.StringClauses;
+import liquibase.util.StringClauses.ClauseIterator;
+import liquibase.util.SqlParser;
+import java.util.List;
+import java.util.ArrayList;
+import org.apache.commons.lang3.StringUtils;
+
+//------------------------------------------------------------
+  rule "Function names must start with 'FN_'"
+//------------------------------------------------------------
+	salience 1
+	when
+	    wc : WithComments(checkCodeCreateObjectNames(getText(), "function", "FN_"))
+	then
+	    String errorMessage = "FILE: " + wc.getSqlFile().getName();
+	    insert(new Response(ResponseType.WARN, errorMessage, drools.getRule().getName()));
+	end
+	
+//------------------------------------------------------------
+  rule "Function names must be less than 30 characters"
+//------------------------------------------------------------
+	salience 1
+	when
+	    wc : WithComments((getCreateObjectName(getText(), "function")).length() > 30)
+	then
+	    String errorMessage = "FILE: " + wc.getSqlFile().getName();
+	    insert(new Response(ResponseType.WARN, errorMessage, drools.getRule().getName()));
+	end
+	
+//------------------------------------------------------------
+  rule "Procedure names must start with 'SP_'"
+//------------------------------------------------------------
+	salience 1
+	when
+	    wc : WithComments(checkCodeCreateObjectNames(getText(), "procedure", "SP_"))
+	then
+	    String errorMessage = "FILE: " + wc.getSqlFile().getName();
+	    insert(new Response(ResponseType.WARN, errorMessage, drools.getRule().getName()));
+	end
+	
+//------------------------------------------------------------
+  rule "Procedure names must be less than 30 characters"
+//------------------------------------------------------------
+	salience 1
+	when
+	    wc : WithComments((getCreateObjectName(getText(), "procedure")).length() > 30)
+	then
+	    String errorMessage = "FILE: " + wc.getSqlFile().getName();
+	    insert(new Response(ResponseType.WARN, errorMessage, drools.getRule().getName()));
+	end
+	
+//------------------------------------------------------------
+  rule "Trigger names must start with 'TR_'"
+//------------------------------------------------------------
+	salience 1
+	when
+	    wc : WithComments(checkCodeCreateObjectNames(getText(), "trigger", "TR_"))
+	then
+	    String errorMessage = "FILE: " + wc.getSqlFile().getName();
+	    insert(new Response(ResponseType.WARN, errorMessage, drools.getRule().getName()));
+	end
+	
+//------------------------------------------------------------
+  rule "Trigger names must be less than 30 characters"
+//------------------------------------------------------------
+	salience 1
+	when
+	    wc : WithComments((getCreateObjectName(getText(), "trigger")).length() > 30)
+	then
+	    String errorMessage = "FILE: " + wc.getSqlFile().getName();
+	    insert(new Response(ResponseType.WARN, errorMessage, drools.getRule().getName()));
+	end
+		
+//============================================================
+// checkCodeCreateObjectNames(sql, objectType, nameString)
+// 		Parses SQL looking for "CREATE $X $Y" and validates that 
+//		object names ($Y) start with nameString
+//============================================================
+
+function boolean checkCodeCreateObjectNames(String sqlString, String sqlObjectType, String nameString) {
+	List<String>   tokens = new ArrayList<>();
+	StringClauses  parsed = SqlParser.parse(sqlString, true, false);
+	ClauseIterator ci     = parsed.getClauseIterator();
+	
+	boolean result 		  = true;
+	
+	//
+	// Tokenize the SQL
+	//
+	while (ci.hasNext()) {
+		String string = (String)ci.nextNonWhitespace();
+		if (string != null) {
+			tokens.add(string);
+		}
+	}
+
+	//
+	// Look for "CREATE $objectType $objectName" or "CREATE OR REPLACE $objectType $objectName
+	// and make sure $objectName starts with nameString
+	//
+	for (int i=0; i < tokens.size(); i++) {
+		String token = tokens.get(i); 
+		if (token == null) {
+			continue;
+		}
+		
+		String thisToken   = token.toLowerCase();			
+		if (thisToken.equals("create")) {
+			String objectToken = tokens.get(i+1).toLowerCase();
+			String nameToken   = tokens.get(i+2).toLowerCase();
+			
+			// See if "create or replace"
+			if (objectToken.equals("or")) {
+				if (nameToken.equals("replace")) {
+					objectToken = tokens.get(i+3).toLowerCase();
+					nameToken   = tokens.get(i+4).toLowerCase();
+				}
+			}
+			
+			// Object type of interest?
+			if (objectToken.equals(sqlObjectType)) {
+				
+				// Check if a fully quaified name
+				if (nameToken.contains(".")) {
+					String[] parts = nameToken.split("\\.");
+					nameToken = parts[1];
+				}
+						  
+				// Remove brackets if exist
+				nameToken = nameToken.replace("[", "");
+				nameToken = nameToken.replace("]", "");
+						  
+				// Does name start with "nameString"?
+				if (nameToken.startsWith(nameString.toLowerCase())) {
+					return false; // Yes it does
+				} else {
+					return true;	// Yes it does not
+				}
+				
+			} else {
+				result = false;		// Not interested in this object type
+			}
+		} else {
+			result = false;			// Not a "create"
+		}
+	}
+		
+	return result; 		  			// Return false it ok, true it not
+}
+
+//============================================================
+// getCreateObjectName(sql, objectType)
+// 		Parses SQL looking for "CREATE $X $Y" and validates that 
+//		object names ($Y) start with nameString
+//============================================================
+
+function String getCreateObjectName(String sqlString, String sqlObjectType) {
+	List<String>   tokens = new ArrayList<>();
+	StringClauses  parsed = SqlParser.parse(sqlString, true, false);
+	ClauseIterator ci     = parsed.getClauseIterator();
+	
+	boolean result 		  = true;
+	
+	//
+	// Tokenize the SQL
+	//
+	while (ci.hasNext()) {
+		String string = (String)ci.nextNonWhitespace();
+		if (string != null) {
+			tokens.add(string);
+		}
+	}
+
+	//
+	// Look for "CREATE $objectType $objectName" or "CREATE OR REPLACE $objectType $objectName
+	// and make sure $objectName starts with nameString
+	//
+	for (int i=0; i < tokens.size(); i++) {
+		String token = tokens.get(i); 
+		if (token == null) {
+			continue;
+		}
+		
+		String thisToken   = token.toLowerCase();			
+		if (thisToken.equals("create")) {
+			String objectToken = tokens.get(i+1).toLowerCase();
+			String nameToken   = tokens.get(i+2).toLowerCase();
+			
+			// See if "create or replace"
+			if (objectToken.equals("or")) {
+				if (nameToken.equals("replace")) {
+					objectToken = tokens.get(i+3).toLowerCase();
+					nameToken   = tokens.get(i+4).toLowerCase();
+				}
+			}
+			
+			// Object type of interest?
+			if (objectToken.equals(sqlObjectType)) {
+				
+				// Check if a fully quaified name
+				if (nameToken.contains(".")) {
+					String[] parts = nameToken.split("\\.");
+					nameToken = parts[1];
+				}
+						  
+				// Remove brackets if exist
+				nameToken = nameToken.replace("[", "");
+				nameToken = nameToken.replace("]", "");
+				return nameToken;	  
+				
+			} else {
+				return "";		// Not interested in this object type
+			}
+		} else {
+			return "";			// Not a "create"
+		}
+	}
+		
+	return ""; 		  			// Return false it ok, true it not
+}

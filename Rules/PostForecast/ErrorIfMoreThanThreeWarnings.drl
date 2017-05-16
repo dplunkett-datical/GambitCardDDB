@@ -1,0 +1,15 @@
+package com.datical.rules.postforecast
+
+dialect "mvel"
+
+import com.datical.hammer.core.rules.Response;
+import com.datical.hammer.core.rules.Response.ResponseType;
+import com.datical.hammer.core.forecast.rules.RuleFunctions;
+import com.datical.db.forecastmodel.Forecast;
+
+rule "More then 3 warnings is an error."
+when
+	Forecast( countRuleWarnings > 3, $warningCount: countRuleWarnings ) 
+then
+	insert(new Response(ResponseType.FAIL, "Error: Too many warnings (" + $warningCount + "). Please fix and re-forecast.", drools.getRule().getName()));
+end

@@ -1,0 +1,333 @@
+package com.datical.hammer.core.sqlrules
+
+//================================================================================
+// File: 	table_rules.drl
+//
+// Phase: 	SQLRULES
+//       
+// Purpose: Ensure naming standards are adhered to for database code "CREATE"
+//
+// Invoke:	hammer runRules or deployPackager
+//
+// Assumptions:
+//	1. Only expecting one "CREATE TABLE" per file
+//
+// Standards Enforced:
+//
+//   2016-11-29: Table names must start with 'T_'
+//   2016-11-29: Table names must less that 32 characters
+//   2016-11-29: Table names cannot have special characters
+//	 2016-11-29: Table DROPs are not allowed
+//
+//================================================================================
+
+import com.datical.db.project.Project;
+import com.datical.hammer.core.rules.Response;
+import com.datical.hammer.core.rules.Response.ResponseType;
+import com.datical.hammer.core.rules.WithComments;
+import com.datical.hammer.core.rules.WithoutComments;
+import liquibase.util.StringClauses;
+import liquibase.util.StringClauses.ClauseIterator;
+import liquibase.util.SqlParser;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
+
+//------------------------------------------------------------
+  rule "Table names must start with 'T_'"
+//------------------------------------------------------------
+	salience 1
+	when
+	    wc : WithComments(checkCreateObjectNames(getText(), "table", "T_"))
+	then
+	    String errorMessage = "FILE: " + wc.getSqlFile().getName();
+	    insert(new Response(ResponseType.WARN, errorMessage, drools.getRule().getName()));
+	end
+	
+//------------------------------------------------------------
+  rule "Table names must be less that 32 characters."
+//------------------------------------------------------------
+	salience 1
+	when
+	    wc : WithComments((getCreateObjectName(getText(), "table")).length() > 32)
+	then
+	    String errorMessage = "FILE: " + wc.getSqlFile().getName();
+	    insert(new Response(ResponseType.WARN, errorMessage, drools.getRule().getName()));
+	end
+	
+//------------------------------------------------------------
+  rule "Table Drops not allowed"
+//------------------------------------------------------------
+	salience 1
+	when
+	    wc : WithComments(checkForTableDrops(getText(), "table"))
+	then
+	    String errorMessage = "FILE: " + wc.getSqlFile().getName();
+	    insert(new Response(ResponseType.FAIL, errorMessage, drools.getRule().getName()));
+	end
+	
+//------------------------------------------------------------
+  rule "Table names should only use certain characters"
+//------------------------------------------------------------
+	salience 1
+	when
+	    wc : WithComments(checkForSpecialCharsInName(getText(), "table"))
+	then
+	    String errorMessage = "FILE: " + wc.getSqlFile().getName();
+	    insert(new Response(ResponseType.FAIL, errorMessage, drools.getRule().getName()));
+	end
+		
+//============================================================
+// checkCreateObjectNames(sql, objectType, nameString)
+// 		Parses SQL looking for "CREATE $X $Y" and validates that 
+//		object names ($Y) start with nameString
+//============================================================
+
+function boolean checkCreateObjectNames(String sqlString, String sqlObjectType, String nameString) {
+	List<String>   tokens = new ArrayList<>();
+	StringClauses  parsed = SqlParser.parse(sqlString, true, false);
+	ClauseIterator ci     = parsed.getClauseIterator();
+	
+	boolean result 		  = true;
+	
+	//
+	// Tokenize the SQL
+	//
+	while (ci.hasNext()) {
+		String string = (String)ci.nextNonWhitespace();
+		if (string != null) {
+			tokens.add(string);
+		}
+	}
+
+	//
+	// Look for "CREATE $objectType $objectName" and make sure $objectName starts with nameString
+	//
+	for (int i=0; i < tokens.size(); i++) {
+		String token = tokens.get(i); 
+		if (token == null) {
+			continue;
+		}
+		
+		String thisToken   = token.toLowerCase();			
+		if (thisToken.equals("create")) {
+			String objectToken = tokens.get(i+1).toLowerCase();
+			String nameToken   = tokens.get(i+2).toLowerCase();
+			
+			// Object type of interest?
+			if (objectToken.equals(sqlObjectType)) {
+				
+				// Check if a fully quaified name
+				if (nameToken.contains(".")) {
+					String[] parts = nameToken.split("\\.");
+					nameToken = parts[1];
+				}
+						  
+				// Remove brackets if exist
+				nameToken = nameToken.replace("[", "");
+				nameToken = nameToken.replace("]", "");
+						  
+				// Does name start with "nameString"?
+				if (nameToken.startsWith(nameString.toLowerCase())) {
+					return false; // Yes it does
+				} else {
+					return true;	// Yes it does not
+				}
+				
+			} else {
+				result = false;		// Not interested in this object type
+			}
+		} else {
+			result = false;			// Not a "create"
+		}
+	}
+		
+	return result; 		  			// Return false it ok, true it not
+}
+
+//============================================================
+// getCreateObjectName(sql, objectType)
+// 		Parses SQL looking for "CREATE $X $Y" and validates that 
+//		object names ($Y) start with nameString
+//============================================================
+
+function String getCreateObjectName(String sqlString, String sqlObjectType) {
+	List<String>   tokens = new ArrayList<>();
+	StringClauses  parsed = SqlParser.parse(sqlString, true, false);
+	ClauseIterator ci     = parsed.getClauseIterator();
+	
+	boolean result 		  = true;
+	
+	//
+	// Tokenize the SQL
+	//
+	while (ci.hasNext()) {
+		String string = (String)ci.nextNonWhitespace();
+		if (string != null) {
+			tokens.add(string);
+		}
+	}
+
+	//
+	// Look for "CREATE $objectType $objectName" return objectName
+	//
+	for (int i=0; i < tokens.size(); i++) {
+		String token = tokens.get(i); 
+		if (token == null) {
+			continue;
+		}
+		
+		String thisToken   = token.toLowerCase();			
+		if (thisToken.equals("create")) {
+			String objectToken = tokens.get(i+1).toLowerCase();
+			String nameToken   = tokens.get(i+2).toLowerCase();
+			
+			// Object type of interest?
+			if (objectToken.equals(sqlObjectType)) {
+				
+				// Check if a fully quaified name
+				if (nameToken.contains(".")) {
+					String[] parts = nameToken.split("\\.");
+					nameToken = parts[1];
+				}
+						  
+				// Remove brackets if exist
+				nameToken = nameToken.replace("[", "");
+				nameToken = nameToken.replace("]", "");
+				return nameToken;	  
+				
+			} else {
+				return "";		// Not interested in this object type
+			}
+		} else {
+			return "";			// Not a "create"
+		}
+	}
+		
+	return ""; 		  			// Return false it ok, true it not
+}
+
+//============================================================
+// checkForTableDrops(sql, objectType)
+// 		Parses SQL looking for "CREATE $X $Y" and validates that 
+//		object names ($Y) start with nameString
+//============================================================
+
+function boolean checkForTableDrops(String sqlString, String sqlObjectType) {
+	List<String>   tokens = new ArrayList<>();
+	StringClauses  parsed = SqlParser.parse(sqlString, true, false);
+	ClauseIterator ci     = parsed.getClauseIterator();
+	
+	//
+	// Tokenize the SQL
+	//
+	while (ci.hasNext()) {
+		String string = (String)ci.nextNonWhitespace();
+		if (string != null) {
+			tokens.add(string);
+		}
+	}
+
+	//
+	// Look for "DROP TABLE"
+	//
+	for (int i=0; i < tokens.size(); i++) {
+		String token = tokens.get(i); 
+		if (token == null) {
+			continue;
+		}
+
+		String thisToken   = token.toLowerCase();			
+		if (thisToken.equals("drop")) {
+			String objectToken = tokens.get(i+1).toLowerCase();
+						
+			// Object type of interest?
+			if (objectToken.equals(sqlObjectType)) {
+				return true;
+			} else {
+				continue;			// Not a "alter"
+			}
+		}
+	}
+		
+	return false; 		  			// Return false it ok, true it not
+}
+
+//============================================================
+// checkForSpecialCharsInName(sql, objectType)
+// 		Parses SQL looking for "CREATE $X $Y" and validates that 
+//		object names ($Y) start with nameString
+//============================================================
+
+function boolean checkForSpecialCharsInName(String sqlString, String sqlObjectType) {
+	List<String>   tokens = new ArrayList<>();
+	StringClauses  parsed = SqlParser.parse(sqlString, true, false);
+	ClauseIterator ci     = parsed.getClauseIterator();
+	
+	boolean result 		  = true;
+	
+	//
+	// Tokenize the SQL
+	//
+	while (ci.hasNext()) {
+		String string = (String)ci.nextNonWhitespace();
+		if (string != null) {
+			tokens.add(string);
+		}
+	}
+	
+	//
+	// Look for "CREATE $objectType $objectName" and make sure $objectName starts with nameString
+	//
+	for (int i=0; i < tokens.size(); i++) {
+		String token = tokens.get(i); 
+		if (token == null) {
+			continue;
+		}
+		
+		String thisToken   = token.toLowerCase();			
+		if (thisToken.equals("create")) {
+			String objectToken = tokens.get(i+1).toLowerCase();
+			String nameToken   = tokens.get(i+2).toLowerCase();
+									
+			// Object type of interest?
+			if (objectToken.equals(sqlObjectType)) {
+				
+				// Check if a fully quaified name
+				if (nameToken.contains(".")) {
+					String[] parts = nameToken.split("\\.");
+					nameToken = parts[1];
+				}
+										  
+				// Remove brackets if exist
+				nameToken = nameToken.replace("[", "");
+				nameToken = nameToken.replace("]", "");
+						  
+				// Does the name have special characters?
+				if (nameToken == null || nameToken.trim().isEmpty()) {
+			         System.out.println("Incorrect format of string");
+			         return true;
+			     }
+			     Pattern p = Pattern.compile("[^A-Za-z0-9_]");
+			     Matcher m = p.matcher(nameToken);
+			     boolean b = m.find();
+			     if (b == true) {
+			        System.out.println("There is a special character in my string ");
+			        return true;
+			     } else {
+			         System.out.println("There is no special char.");
+			     	return false;
+			     }
+				
+			} else {
+				result = false;		// Not interested in this object type
+			}
+		} else {
+			result = false;			// Not a "create"
+		}
+	}
+		
+	return result; 		  			// Return false it ok, true it not
+}

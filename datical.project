@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="ASCII"?>
+<dbproject:Project xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dbproject="http://datical.com/db/project/1.0" name="GambitCard" storedLogicExternal="true" deployThreshold="stopOnError" requireOptions="true" limitForecastProfiling="true" deployMode="full" projectsId="f1400b20-9467-4728-8c8a-a8ef6e8abe42" rowsPerBatch="10000" enableCompression="false" runtimeCredentials="false" multiSchema="false" dbSchemaDefinition="dbDef" enableRowCount="true">
+  <dbDefs xsi:type="dbproject:OracleDbDef" name="REF_DB" driver="oracle.jdbc.OracleDriver" hostname="localhost" port="1521" username="datical" password="cGFzc3dvcmQ=" contexts="REF_DB" defaultSchemaName="GAMBITCARD_REF_DB" labels="pipeline1" serviceName="ORCL" enableCompression="false"/>
+  <dbDefs xsi:type="dbproject:OracleDbDef" name="DEV" driver="oracle.jdbc.OracleDriver" hostname="localhost" port="1521" username="datical" password="cGFzc3dvcmQ=" contexts="DEV" defaultSchemaName="GAMBITCARD_DEV" labels="pipeline1" serviceName="ORCL" enableCompression="false" rowsPerBatch="10000"/>
+  <dbDefs xsi:type="dbproject:OracleDbDef" name="TEST" driver="oracle.jdbc.OracleDriver" hostname="localhost" port="1521" username="datical" password="cGFzc3dvcmQ=" contexts="TEST" defaultSchemaName="GAMBITCARD_TEST" labels="pipeline1 AND test" serviceName="ORCL" enableCompression="false" rowsPerBatch="10000"/>
+  <dbDefs xsi:type="dbproject:OracleDbDef" name="PROD" driver="oracle.jdbc.OracleDriver" hostname="localhost" port="1521" username="datical" password="cGFzc3dvcmQ=" contexts="PROD" defaultSchemaName="GAMBITCARD_PROD" labels="prod" serviceName="ORCL" enableCompression="false" rowsPerBatch="10000"/>
+  <dbDefs xsi:type="dbproject:OracleDbDef" name="REF_DB2" driver="oracle.jdbc.OracleDriver" hostname="localhost" port="1521" username="datical" password="cGFzc3dvcmQ=" contexts="REF_DB" defaultSchemaName="GAMBITCARD_REF_DB2" labels="pipeline2" serviceName="ORCL" enableCompression="false"/>
+  <dbDefs xsi:type="dbproject:OracleDbDef" name="DEV2" driver="oracle.jdbc.OracleDriver" hostname="localhost" port="1521" username="datical" password="cGFzc3dvcmQ=" contexts="DEV" defaultSchemaName="GAMBITCARD_DEV2" labels="pipeline2" serviceName="ORCL" enableCompression="false" rowsPerBatch="10000"/>
+  <dbDefs xsi:type="dbproject:OracleDbDef" name="TEST2" driver="oracle.jdbc.OracleDriver" hostname="localhost" port="1521" username="datical" password="cGFzc3dvcmQ=" contexts="TEST" defaultSchemaName="GAMBITCARD_TEST2" labels="pipeline2 AND test" serviceName="ORCL" enableCompression="false" rowsPerBatch="10000"/>
+  <dbDefs xsi:type="dbproject:OracleDbDef" name="REF_DB_HOTFIX" driver="oracle.jdbc.OracleDriver" hostname="localhost" port="1521" username="datical" password="cGFzc3dvcmQ=" contexts="REF_DB" defaultSchemaName="GAMBITCARD_REF_DB_HOTFIX" labels="hotfix" serviceName="ORCL" enableCompression="false" rowsPerBatch="10000"/>
+  <plans name="pipeline1" description="Current Release Pipeline" databaseDefs="//@dbDefs[name='REF_DB'] //@dbDefs[name='DEV'] //@dbDefs[name='TEST'] //@dbDefs[name='PROD']"/>
+  <plans name="pipeline2" description="Next Release Pipeline" databaseDefs="//@dbDefs[name='REF_DB2'] //@dbDefs[name='DEV2'] //@dbDefs[name='TEST2']"/>
+  <plans name="hotfix" description="Hotfix Pipeline" databaseDefs="//@dbDefs[name='REF_DB_HOTFIX'] //@dbDefs[name='PROD']"/>
+  <changelog href="Changelog/changelog.xml#//@databaseChangeLog"/>
+  <releaseLabels name="PIPELINE1" description="REL1.2"/>
+  <releaseLabels name="PIPELINE2" description="REL1.3"/>
+  <releaseLabels name="HOTFIX" description=""/>
+  <releaseLabels name="TEST" description=""/>
+  <releaseLabels name="PROD" description=""/>
+  <schemas name=""/>
+</dbproject:Project>

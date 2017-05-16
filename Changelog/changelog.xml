@@ -1,0 +1,342 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:appdba="http://www.datical.net/xml/ns/appdba" xmlns:datical="http://www.datical.net/xml/ns/datical" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:storedlogic="http://www.datical.net/xml/ns/storedlogic" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" logicalFilePath="Changelog/changelog.xml" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd">
+    <changeSet author="Administrator" id="createType:CUST_ADDRESS_TYPE" labels="baseline">
+        <comment>A Type</comment>
+        <sql>
+	    CREATE OR REPLACE TYPE "CUST_ADDRESS_TYPE" AS OBJECT
+	    ( street_address     VARCHAR2(40)
+	    , postal_code        VARCHAR2(10)
+	    , city               VARCHAR2(30)
+	    , state_province     VARCHAR2(10)
+	    , country_id         CHAR(2)
+	    , phone              Phone_List_Type
+	    )
+      </sql>
+    </changeSet>
+    <changeSet author="Administrator" id="createType:PHONE_LIST_TYPE" labels="baseline">
+        <comment>A Type</comment>
+        <sql>
+		CREATE OR REPLACE TYPE "PHONE_LIST_TYPE" AS VARRAY(5) OF VARCHAR2(25)
+	</sql>
+    </changeSet>
+    <changeSet author="Administrator" id="createType:INTEREST_TYPE" labels="baseline">
+        <comment>A Type</comment>
+        <sql endDelimiter="/" splitStatements="false">
+		CREATE OR REPLACE TYPE Price_Type
+		AS OBJECT (price NUMBER(10,2),
+	    MEMBER FUNCTION total_price_VAT (vat number) RETURN NUMBER);
+    </sql>
+    </changeSet>
+    <changeSet author="Administrator" id="createType:INTEREST_TYPE_BODY" labels="baseline">
+        <comment>A Type</comment>
+        <sql endDelimiter="/" splitStatements="false">
+		     CREATE OR REPLACE TYPE BODY Price_Type
+			 IS
+				MEMBER FUNCTION total_price_VAT (vat NUMBER)
+				RETURN NUMBER IS
+				BEGIN
+					RETURN (price*((vat+100)/100));
+				END;
+			 END;
+	    </sql>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createSequence:SEQEXEMPLAR" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createSequence cacheSize="0" cycle="false" incrementBy="1" maxValue="9999999999999999999999999999" minValue="1" ordered="false" sequenceName="SEQEXEMPLAR" startValue="14"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createTable:T_BORROWING" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createTable remarks="Borrowed items" tableName="T_BORROWING">
+            <column name="EXEMPLAR_ID" type="NUMBER(*, 0)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CUSTOMER_ID" type="NUMBER(*, 0)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="SYSDATE" name="START_DATE" type="date"/>
+            <column name="END_DATE" type="date"/>
+            <column name="TOTAL_PRICE" type="PRICE_TYPE"/>
+            <column defaultValueNumeric="19" name="VAT" type="NUMBER(4, 2)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createTable:T_CUSTOMER" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createTable tableName="T_CUSTOMER">
+            <column name="CUSTOMER_ID" type="NUMBER(*, 0)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="NAME" remarks="Name column can contain First and Middle name. Surname must be in different column." type="VARCHAR2(20 CHAR)"/>
+            <column name="ADDRESS" type="CUST_ADDRESS_TYPE"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createTable:T_CUSTOMER_RATING" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createTable remarks="Movie ratings (by customers)" tableName="T_CUSTOMER_RATING">
+            <column name="TITLE" type="VARCHAR2(50 CHAR)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="DIRECTOR" type="VARCHAR2(30 CHAR)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="3" name="RATING" type="NUMBER(*, 0)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createTable:T_EXEMPLAR" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createTable tableName="T_EXEMPLAR">
+            <column name="EXEMPLAR_ID" type="NUMBER(*, 0)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="FILM_ID" type="NUMBER(*, 0)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="MEDIUM_ID" type="NUMBER(*, 0)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="PRICE_PER_DAY" type="NUMBER(*, 0)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createTable:T_FILM" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createTable tableName="T_FILM">
+            <column name="FILM_ID" type="NUMBER(*, 0)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="TITLE" type="VARCHAR2(50 CHAR)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="DIRECTOR" type="VARCHAR2(30 CHAR)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="PRODUCTION_COMPANY" remarks="Company name must contain also information about company type - LTD, Inc. and so on." type="VARCHAR2(50 CHAR)"/>
+            <column name="GENRE_ID" type="NUMBER(*, 0)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="MIN_AGE" type="NUMBER(*, 0)"/>
+            <column name="FILM_ID_EPISODES" type="NUMBER(*, 0)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createTable:T_GENRE" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createTable tableName="T_GENRE">
+            <column name="GENRE_ID" type="NUMBER(*, 0)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="NAME" type="VARCHAR2(20 CHAR)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createTable:T_MEDIUM" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createTable tableName="T_MEDIUM">
+            <column name="MEDIUM_ID" type="NUMBER(*, 0)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="MEDIUM_TYPE" type="VARCHAR2(20 BYTE)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createTable:T_ORDER_RECORD" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createTable remarks="All records are stored in list of records. It will be possible to book a movie." tableName="T_ORDER_RECORD">
+            <column name="CUSTOMER_ID" type="NUMBER(*, 0)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="FILM_ID" type="NUMBER(*, 0)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ORDER_DATE" type="date"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="addCheckConstraint:CHECK_END_AFTER_START" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <storedlogic:addCheckConstraint constraintName="CHECK_END_AFTER_START" disabled="false" tableName="T_BORROWING">(end_date&gt;start_date) or (end_date is null)</storedlogic:addCheckConstraint>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="addCheckConstraint:CHECK_RATING" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <storedlogic:addCheckConstraint constraintName="CHECK_RATING" disabled="false" tableName="T_CUSTOMER_RATING">rating &gt; 0</storedlogic:addCheckConstraint>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createIndex:PK_T_BORROWING" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createIndex indexName="PK_T_BORROWING" tableName="T_BORROWING" unique="true">
+            <column name="EXEMPLAR_ID"/>
+        </createIndex>
+        <addPrimaryKey columnNames="EXEMPLAR_ID" constraintName="PK_T_BORROWING" forIndexName="PK_T_BORROWING" tableName="T_BORROWING"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createIndex:PK_T_CUSTOMER" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createIndex indexName="PK_T_CUSTOMER" tableName="T_CUSTOMER" unique="true">
+            <column name="CUSTOMER_ID"/>
+        </createIndex>
+        <addPrimaryKey columnNames="CUSTOMER_ID" constraintName="PK_T_CUSTOMER" forIndexName="PK_T_CUSTOMER" tableName="T_CUSTOMER"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createIndex:PK_T_CUSTOMER_RATING" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createIndex indexName="PK_T_CUSTOMER_RATING" tableName="T_CUSTOMER_RATING" unique="true">
+            <column name="TITLE"/>
+            <column name="DIRECTOR"/>
+        </createIndex>
+        <addPrimaryKey columnNames="TITLE, DIRECTOR" constraintName="PK_T_CUSTOMER_RATING" forIndexName="PK_T_CUSTOMER_RATING" tableName="T_CUSTOMER_RATING"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createIndex:PK_T_EXEMPLAR" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createIndex indexName="PK_T_EXEMPLAR" tableName="T_EXEMPLAR" unique="true">
+            <column name="EXEMPLAR_ID"/>
+        </createIndex>
+        <addPrimaryKey columnNames="EXEMPLAR_ID" constraintName="PK_T_EXEMPLAR" forIndexName="PK_T_EXEMPLAR" tableName="T_EXEMPLAR"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createIndex:PK_T_FILM" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createIndex indexName="PK_T_FILM" tableName="T_FILM" unique="true">
+            <column name="FILM_ID"/>
+        </createIndex>
+        <addPrimaryKey columnNames="FILM_ID" constraintName="PK_T_FILM" forIndexName="PK_T_FILM" tableName="T_FILM"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createIndex:PK_T_GENRE" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createIndex indexName="PK_T_GENRE" tableName="T_GENRE" unique="true">
+            <column name="GENRE_ID"/>
+        </createIndex>
+        <addPrimaryKey columnNames="GENRE_ID" constraintName="PK_T_GENRE" forIndexName="PK_T_GENRE" tableName="T_GENRE"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createIndex:PK_T_MEDIUM" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createIndex indexName="PK_T_MEDIUM" tableName="T_MEDIUM" unique="true">
+            <column name="MEDIUM_ID"/>
+        </createIndex>
+        <addPrimaryKey columnNames="MEDIUM_ID" constraintName="PK_T_MEDIUM" forIndexName="PK_T_MEDIUM" tableName="T_MEDIUM"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createIndex:PK_T_ORDER_RECORD" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createIndex indexName="PK_T_ORDER_RECORD" tableName="T_ORDER_RECORD" unique="true">
+            <column name="CUSTOMER_ID"/>
+            <column name="FILM_ID"/>
+        </createIndex>
+        <addPrimaryKey columnNames="CUSTOMER_ID, FILM_ID" constraintName="PK_T_ORDER_RECORD" forIndexName="PK_T_ORDER_RECORD" tableName="T_ORDER_RECORD"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createIndex:AK_EXEMPLAR_PPD" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createIndex indexName="AK_EXEMPLAR_PPD" tableName="T_EXEMPLAR" unique="true">
+            <column name="EXEMPLAR_ID"/>
+            <column name="PRICE_PER_DAY"/>
+        </createIndex>
+        <addUniqueConstraint columnNames="EXEMPLAR_ID, PRICE_PER_DAY" constraintName="AK_EXEMPLAR_PPD" forIndexName="AK_EXEMPLAR_PPD" tableName="T_EXEMPLAR"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createIndex:AK_TITLE_DIRECTOR" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createIndex indexName="AK_TITLE_DIRECTOR" tableName="T_FILM" unique="true">
+            <column name="TITLE"/>
+            <column name="DIRECTOR"/>
+        </createIndex>
+        <addUniqueConstraint columnNames="TITLE, DIRECTOR" constraintName="AK_TITLE_DIRECTOR" forIndexName="AK_TITLE_DIRECTOR" tableName="T_FILM"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createView:V_CUSTOMER_HAS_FILM" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createView fullDefinition="true" viewName="V_CUSTOMER_HAS_FILM">CREATE OR REPLACE FORCE VIEW V_CUSTOMER_HAS_FILM (NAME, CITY, TITLE, DIRECTOR) AS SELECT DISTINCT c.name, c.address.city AS city, f.title, f.director
+FROM T_CUSTOMER c, T_BORROWING b, T_EXEMPLAR e, T_FILM f
+WHERE c.customer_id=b.customer_id 
+and b.exemplar_id=e.exemplar_id 
+and e.film_id=f.film_id</createView>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createFunction:F_CUSTOMER_HAS_NUM_FILM" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <storedlogic:createFunction functionName="F_CUSTOMER_HAS_NUM_FILM" path="function/F_CUSTOMER_HAS_NUM_FILM.sql"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createFunction:TRI_BORROWING" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <storedlogic:createTrigger disabled="false" path="trigger/TRI_BORROWING.sql" tableName="T_BORROWING" triggerName="TRI_BORROWING"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createFunction:TRU_BORROWING" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <storedlogic:createTrigger disabled="false" path="trigger/TRU_BORROWING.sql" tableName="T_BORROWING" triggerName="TRU_BORROWING"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createFunction:TSU_T_EXEMPLAR_SEQEXEMPLAR" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <storedlogic:createTrigger disabled="false" path="trigger/TSU_T_EXEMPLAR_SEQEXEMPLAR.sql" tableName="T_EXEMPLAR" triggerName="TSU_T_EXEMPLAR_SEQEXEMPLAR"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createFunction:TS_T_EXEMPLAR_SEQEXEMPLAR" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <storedlogic:createTrigger disabled="false" path="trigger/TS_T_EXEMPLAR_SEQEXEMPLAR.sql" tableName="T_EXEMPLAR" triggerName="TS_T_EXEMPLAR_SEQEXEMPLAR"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createProcedure:P_CUSTOMER_HAS_NUM_FILM" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createProcedure path="procedure/P_CUSTOMER_HAS_NUM_FILM.sql" procedureName="P_CUSTOMER_HAS_NUM_FILM"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="createIndex:T_CUSTOMER" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <createIndex indexName="I_NAME" tableName="T_CUSTOMER">
+            <column name="NAME"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="addForeignKeyConstraint:HAS" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <addForeignKeyConstraint baseColumnNames="FILM_ID" baseTableName="T_EXEMPLAR" constraintName="HAS" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="FILM_ID" referencedTableName="T_FILM"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="addForeignKeyConstraint:HAS_MORE_EPISODES" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <addForeignKeyConstraint baseColumnNames="FILM_ID_EPISODES" baseTableName="T_FILM" constraintName="HAS_MORE_EPISODES" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="FILM_ID" referencedTableName="T_FILM"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="addForeignKeyConstraint:IS_AVAILABLE_ON" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <addForeignKeyConstraint baseColumnNames="MEDIUM_ID" baseTableName="T_EXEMPLAR" constraintName="IS_AVAILABLE_ON" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="MEDIUM_ID" referencedTableName="T_MEDIUM"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="addForeignKeyConstraint:IS_OF" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <addForeignKeyConstraint baseColumnNames="GENRE_ID" baseTableName="T_FILM" constraintName="IS_OF" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="GENRE_ID" referencedTableName="T_GENRE"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="addForeignKeyConstraint:IS_RATED" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <addForeignKeyConstraint baseColumnNames="TITLE,DIRECTOR" baseTableName="T_CUSTOMER_RATING" constraintName="IS_RATED" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="TITLE,DIRECTOR" referencedTableName="T_FILM"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="addForeignKeyConstraint:IS_RELATED_TO" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <addForeignKeyConstraint baseColumnNames="EXEMPLAR_ID" baseTableName="T_BORROWING" constraintName="IS_RELATED_TO" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="EXEMPLAR_ID" referencedTableName="T_EXEMPLAR"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="addForeignKeyConstraint:IS_REQUIRED_BY" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <addForeignKeyConstraint baseColumnNames="FILM_ID" baseTableName="T_ORDER_RECORD" constraintName="IS_REQUIRED_BY" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="FILM_ID" referencedTableName="T_FILM"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="addForeignKeyConstraint:MAKES" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <addForeignKeyConstraint baseColumnNames="CUSTOMER_ID" baseTableName="T_BORROWING" constraintName="MAKES" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="CUSTOMER_ID" referencedTableName="T_CUSTOMER"/>
+    </changeSet>
+    <changeSet author="Administrator" created="2016-07-13 21:00-0500" id="addForeignKeyConstraint:PLACES" labels="baseline" objectQuotingStrategy="QUOTE_ALL_OBJECTS">
+        <addForeignKeyConstraint baseColumnNames="CUSTOMER_ID" baseTableName="T_ORDER_RECORD" constraintName="PLACES" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="CUSTOMER_ID" referencedTableName="T_CUSTOMER"/>
+    </changeSet>
+    <changeSet author="Administrator" id="loadData:T_GENRE" labels="baseline">
+        <comment>Test Data for T_GENRE</comment>
+        <loadData encoding="UTF-8" file="dml/T_GENRE.csv" tableName="T_GENRE">
+            <column name="GENRE_ID" type="NUMERIC"/>
+            <column name="NAME" type="STRING"/>
+        </loadData>
+    </changeSet>
+    <changeSet author="Administrator" id="loadData:T_FILM" labels="baseline">
+        <comment>Test Data for T_FILM</comment>
+        <loadData encoding="UTF-8" file="dml/T_FILM.csv" tableName="T_FILM">
+            <column name="FILM_ID" type="NUMERIC"/>
+            <column name="TITLE" type="STRING"/>
+            <column name="DIRECTOR" type="STRING"/>
+            <column name="PRODUCTION_COMPANY" type="STRING"/>
+            <column name="GENRE_ID" type="NUMERIC"/>
+            <column name="MIN_AGE" type="NUMERIC"/>
+            <column name="FILM_ID_EPISODES" type="NUMERIC"/>
+        </loadData>
+    </changeSet>
+    <changeSet author="David Plunkett" context="DEV" created="Wed Jul 06 12:53:50 CDT 2016" dbms="oracle" id="AutoGeneratedPermissions_DEV" labels="pipeline1,pipeline2,hotfix" runAlways="true" runOnChange="true" runOrder="last">
+        <comment>setting permissions on tables</comment>
+        <appdba:autoPermissionForObjects grantees="appuser" schemaName="gambitcard_dev">
+            <appdba:rule objects="TABLE" permissions="SELECT"/>
+        </appdba:autoPermissionForObjects>
+        <rollback/>
+    </changeSet>
+    <changeSet author="David Plunkett" context="TEST" created="Wed Jul 06 12:55:21 CDT 2016" dbms="oracle" id="AutoGeneratedPermissions_TEST" labels="pipeline1,pipeline2,test" runAlways="true" runOnChange="true" runOrder="last">
+        <comment>setting permissions on tables</comment>
+        <appdba:autoPermissionForObjects grantees="appuser" schemaName="gambitcard_test">
+            <appdba:rule objects="TABLE" permissions="SELECT"/>
+        </appdba:autoPermissionForObjects>
+        <rollback/>
+    </changeSet>
+    <changeSet author="David Plunkett" context="PROD" created="Wed Jul 06 12:59:13 CDT 2016" dbms="oracle" id="AutoGeneratedPermissions_PROD" labels="prod" runAlways="true" runOnChange="true" runOrder="last">
+        <comment>setting permissions on tables</comment>
+        <appdba:autoPermissionForObjects grantees="appuser" schemaName="gambitcard_prod">
+            <appdba:rule objects="TABLE" permissions="SELECT"/>
+        </appdba:autoPermissionForObjects>
+        <rollback/>
+    </changeSet>
+    <changeSet author="David Plunkett" context="REF_DB" created="Wed Jul 06 12:53:50 CDT 2016" dbms="oracle" id="AutoGeneratedPermissions_REF_DB" labels="pipeline1,pipeline2,hotfix" runAlways="true" runOnChange="true" runOrder="last">
+        <comment>setting permissions on tables</comment>
+        <appdba:autoPermissionForObjects grantees="appuser" schemaName="gambitcard_ref_db">
+            <appdba:rule objects="TABLE" permissions="SELECT"/>
+        </appdba:autoPermissionForObjects>
+        <rollback/>
+    </changeSet>
+    <changeSet author="Robert Lafleur" created="Wed Jul 06 12:30:29 CDT 2016" id="addColumns:T_BORROWING" labels="pipeline1,jira-101">
+        <comment>Extend T_BORROWING</comment>
+        <addColumn tableName="T_BORROWING">
+            <column name="LOANTYPE" type="VARCHAR2(10)">
+                <constraints/>
+            </column>
+            <column name="RATE" type="DECIMAL(3,3)">
+                <constraints/>
+            </column>
+        </addColumn>
+    </changeSet>
+    <changeSet author="Robert Lafleur" created="Wed Jul 06 12:32:21 CDT 2016" id="createTable:T_RESELLER" labels="pipeline1,jira-102">
+        <comment>Add T_RESELLER Table</comment>
+        <createTable tableName="T_RESELLER">
+            <column name="ID" type="INT">
+                <constraints nullable="true" primaryKey="true" unique="false"/>
+            </column>
+            <column name="NAME" type="VARCHAR2(20)">
+                <constraints nullable="true" primaryKey="false" unique="false"/>
+            </column>
+            <column name="REGION" type="VARCHAR2(20)">
+                <constraints nullable="true" primaryKey="false" unique="false"/>
+            </column>
+            <column name="MARKET" type="VARCHAR2(20)">
+                <constraints nullable="true" primaryKey="false" unique="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>
