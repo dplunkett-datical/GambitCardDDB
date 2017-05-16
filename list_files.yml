@@ -9,8 +9,8 @@ inputs:
   - name: resource-gambitcardddb
 
 outputs:
-  - name: updated-gambit3
+  - name: updated-gambit
 
 run:
-  path: ls
+  path: ls resource-gambitcardddb
   args: [-al]
