@@ -6,11 +6,10 @@ image_resource:
   source: { repository: concourse/bosh-cli }
 
 inputs:
-  - name: resource-tutorial
-  - name: resource-gist
+  - name: resource-gambitcardddb
 
 outputs:
-  - name: updated-gist
+  - name: updated-gambit
 
 run:
   path: list_files.sh
