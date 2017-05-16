@@ -12,5 +12,5 @@ outputs:
   - name: updated-gambit
 
 run:
-  path: pwd
+  path: ls
   args: [-al]
