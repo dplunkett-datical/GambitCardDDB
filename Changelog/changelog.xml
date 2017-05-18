@@ -339,4 +339,11 @@ and e.film_id=f.film_id</createView>
             </column>
         </createTable>
     </changeSet>
+    <changeSet author="david" created="Thu May 18 13:12:16 CDT 2017" id="dockertest" labels="test,pipeline1">
+        <createTable tableName="david">
+            <column name="COLUMN1" type="TEXT">
+                <constraints nullable="true" primaryKey="false" unique="false"/>
+            </column>
+        </createTable>
+    </changeSet>
 </databaseChangeLog>
