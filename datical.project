@@ -8,7 +8,8 @@
   <dbDefs xsi:type="dbproject:OracleDbDef" name="DEV2" driver="oracle.jdbc.OracleDriver" hostname="localhost" port="1521" username="datical" password="cGFzc3dvcmQ=" contexts="DEV" defaultSchemaName="GAMBITCARD_DEV2" labels="pipeline2" serviceName="ORCL" enableCompression="false" rowsPerBatch="10000"/>
   <dbDefs xsi:type="dbproject:OracleDbDef" name="TEST2" driver="oracle.jdbc.OracleDriver" hostname="localhost" port="1521" username="datical" password="cGFzc3dvcmQ=" contexts="TEST" defaultSchemaName="GAMBITCARD_TEST2" labels="pipeline2 AND test" serviceName="ORCL" enableCompression="false" rowsPerBatch="10000"/>
   <dbDefs xsi:type="dbproject:OracleDbDef" name="REF_DB_HOTFIX" driver="oracle.jdbc.OracleDriver" hostname="localhost" port="1521" username="datical" password="cGFzc3dvcmQ=" contexts="REF_DB" defaultSchemaName="GAMBITCARD_REF_DB_HOTFIX" labels="hotfix" serviceName="ORCL" enableCompression="false" rowsPerBatch="10000"/>
-  <plans name="pipeline1" description="Current Release Pipeline" databaseDefs="//@dbDefs[name='REF_DB'] //@dbDefs[name='DEV'] //@dbDefs[name='TEST'] //@dbDefs[name='PROD']"/>
+  <dbDefs xsi:type="dbproject:OracleDbDef" name="docker" driver="oracle.jdbc.OracleDriver" hostname="54.200.141.25" port="1521" username="gambit_docker" password="cGFzc3dvcmQ=" serviceName="xe.oracle.docker" enableCompression="false" rowsPerBatch="10000"/>
+  <plans name="pipeline1" description="Current Release Pipeline" databaseDefs="//@dbDefs[name='REF_DB'] //@dbDefs[name='DEV'] //@dbDefs[name='TEST'] //@dbDefs[name='PROD'] //@dbDefs[name='docker']"/>
   <plans name="pipeline2" description="Next Release Pipeline" databaseDefs="//@dbDefs[name='REF_DB2'] //@dbDefs[name='DEV2'] //@dbDefs[name='TEST2']"/>
   <plans name="hotfix" description="Hotfix Pipeline" databaseDefs="//@dbDefs[name='REF_DB_HOTFIX'] //@dbDefs[name='PROD']"/>
   <changelog href="Changelog/changelog.xml#//@databaseChangeLog"/>
